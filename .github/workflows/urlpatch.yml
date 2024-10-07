@@ -1,52 +1,33 @@
-name: Patch Image via URL
+steps:
+  # 1. Check out the repository to access scripts
+  - name: Check out repository
+    uses: actions/checkout@v4
 
-on:
-  workflow_dispatch:
-    inputs:
-      image_url:
-        description: 'Recovery Image URL'
-        default: 'https://transfer.sh/<file-id>/<file>.img'
-        required: true
-        type: string
+  # 2. Fetch necessary packages
+  - name: Install required packages
+    run: |
+      sudo apt update
+      sudo apt install git wget lz4 tar openssl python3 -y
 
-jobs:
-  process:
-    runs-on: ubuntu-latest
-    
-    steps:
-    - name: Gain file access
-      uses: actions/checkout@v4.1.1
-    
-    - name: Fetch necessary packages
-      run: |
-         sudo apt install git wget lz4 tar openssl python3 -y
-         
-    - name: Download recovery image from URL
-      run: |
-         wget ${{github.event.inputs.image_url}}
+  # 3. Download recovery image from the provided URL
+  - name: Download recovery image
+    run: |
+      wget https://we.tl/t-MKbgvT5uQT -O recovery.img
 
-    - name: Start patching script
-      run: |
-         chmod a+x magiskboot
-         chmod a+x patcher-minimal
-         ./patcher-minimal
+  # 4. Make patching scripts executable
+  - name: Make scripts executable
+    run: |
+      chmod +x magiskboot
+      chmod +x patcher-minimal
 
-    - name: Upload patched image files
-      uses: actions/upload-artifact@v4
-      with:
-        path: /home/runner/work/fastboot-patcher/fastboot-patcher/output/*.*
-        name: Patched Recovery Image Bundle
-        if-no-files-found: error
-        retention-days: 15
-        compression-level: 0
-        overwrite: true
-        
-    - name: Upload keys for patched image
-      uses: actions/upload-artifact@v4
-      with:
-        path: /home/runner/work/fastboot-patcher/fastboot-patcher/keys/*.*
-        name: Patched Image Key Bundle
-        if-no-files-found: error
-        retention-days: 15
-        compression-level: 0
-        overwrite: true
+  # 5. Run the patching script
+  - name: Patch the recovery image
+    run: ./patcher-minimal
+
+  # 6. Upload the patched image as an artifact
+  - name: Upload patched image
+    uses: actions/upload-artifact@v4
+    with:
+      path: ./patched-recovery.img
+      name: Patched Recovery Image
+      retention-days: 15
